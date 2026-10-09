@@ -1,0 +1,143 @@
+// This function will load the YouTube iFrame API if it detects an element with the 'YTwrapper' class
+var players = {};
+
+jQuery(document).ready(function($) {
+
+	if ( $( '.header-sticky' ).length ) {
+		var header = $( '.single-lead_page #masthead' ).outerHeight();
+		$( '.flexlead-wrap' ).css( 'margin-top', header + 'px' );
+	}
+	
+	var $wrapper = jQuery('.VideoWrapper');
+
+	if ($wrapper.length === 0) {
+		return;
+	}
+
+	var $ytVideos = jQuery('.VideoWrapper.youtube');
+	var $vimeoVideos = jQuery('.VideoWrapper.vimeo');
+
+	var ytTag = document.createElement('script');
+	var vimeoTag = document.createElement('script');
+
+	var ytApiScript = "https://www.youtube.com/iframe_api";
+	var vimeoApiScript = "https://player.vimeo.com/api/player.js";
+
+	var firstScriptTag = document.getElementsByTagName('script')[0];
+
+	if ($ytVideos.length !== 0 && isScriptLoaded(ytApiScript) == false ) {
+		ytTag.src = ytApiScript;
+		firstScriptTag.parentNode.insertBefore(ytTag, firstScriptTag);
+	}
+	if ($vimeoVideos.length !== 0 && isScriptLoaded(vimeoApiScript) == false ) {
+		vimeoTag.src = vimeoApiScript;
+		firstScriptTag.parentNode.insertBefore(vimeoTag, firstScriptTag);
+	}
+
+	var ytPlayerControls = {
+		'enablejsapi' : 1,
+		'origin': window.location.origin,
+		'controls': 1,
+		'modestbranding' : 0,
+		'showinfo' : 0,
+		'rel' : 0,
+		'autoplay' : 0,
+		'loop' : 0
+	};
+
+
+
+	window.onYouTubePlayerAPIReady = function() {
+		$ytVideos.each(function() {
+			$el = $(this);
+			var playerID = $el.find('.YTplayer').attr('ID');
+			var vidData = $el.data();
+			var overlay = $el.find('.video-overlay');
+
+			var newPlayer = new YT.Player(playerID, {
+				videoId : vidData.video,
+				playerVars: ytPlayerControls
+			});
+
+			players[playerID] = newPlayer;
+
+			overlay.on("click",function(event){
+				toggleOverlay(event.currentTarget,'start');
+			});
+
+	  });
+	};
+
+	$('.VideoWrapper.vimeo .video-overlay').click(function( event ) {
+		toggleOverlay(event.currentTarget, 'start');
+	});
+
+
+	function toggleOverlay(target, action) {
+		var $target = $( target );
+		var $playerDiv = $target.parent(".VideoWrapper").find(".YTplayer");
+		var service = $target.parent(".VideoWrapper").data('service');
+
+		if ( service === 'vimeo' ) {
+			var playID = $target.parent(".VideoWrapper").attr("id");
+			var $targetPlayer = new Vimeo.Player(playID);
+		} else {
+			var playID = $playerDiv.attr("id");
+			var $targetPlayer = players[playID];
+		}
+
+		if (action == 'start') {
+			$target.toggleClass('show');
+			setTimeout(
+			function()
+			{
+				$target.toggleClass('z-hide');
+			}, 150);
+			if ( service === 'vimeo' ) {
+				$targetPlayer.play();
+			} else {
+				$targetPlayer.playVideo();
+			}
+		} else {
+			$target.toggleClass('z-hide');
+			setTimeout(
+			function()
+			{
+				$target.toggleClass('show');
+			}, 150);
+		}
+	}
+
+	function isScriptLoaded(url) {
+		if (!url) {
+			url = "https://www.youtube.com/iframe_api";
+		}
+
+		var scripts = document.getElementsByTagName('script');
+
+		for (var i = scripts.length; i--;) {
+			if (scripts[i].src == url) {
+				return true;
+			}
+		}
+		return false;
+	}
+  
+	// smooth scroll
+	$( '.scroll' ).on( 'click', function ( e ) {
+        e.preventDefault();
+		var headHeight = 155;
+        //calculate destination place
+        var dest = 0;
+        if ( $( this.hash ).offset().top > $( document ).height() - $( window ).height()) {
+            dest = $( document ).height() - $( window ).height() - headHeight;
+        } else {
+            dest = $( this.hash ).offset().top - headHeight;
+        }
+        //go to destination
+        $( 'html, body' ).animate( {
+          scrollTop: dest
+        }, 600, 'linear' );
+	} );
+	
+});
